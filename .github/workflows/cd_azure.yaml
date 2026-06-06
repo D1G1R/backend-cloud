@@ -1,0 +1,38 @@
+name: CD Azure Docker
+
+on:
+  workflow_run:
+    workflows: ["CI Semantic Versioning"]
+    types:
+      - completed
+  branches:
+    - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Deploy to Azure VM via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VM_IP }}
+          username: ${{ secrets.VM_USERNAME }}
+          password: ${{ secrets.VM_PASSWORD }}
+          script: |
+            sudo apt-get update
+            sudo apt-get install -y docker.io git
+            sudo systemctl start docker
+            sudo systemctl enable docker
+
+            if [ ! -d "backend-cloud" ]; then
+              git clone https://github.com/${{ github.repository }}.git
+            fi
+            cd backend-cloud
+            git reset --hard
+            git pull origin main
+
+            sudo docker build -t robomunch-backend .
+            sudo docker stop backend-container || true
+            sudo docker rm backend-container || true
+            sudo docker run -d --name backend-container -p 80:8000 robomunch-backend

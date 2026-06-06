@@ -1,0 +1,32 @@
+name: CI Linting
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint-and-format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies (Ruff and Pre-commit)
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff pre-commit
+
+      - name: Run Ruff Linting
+        run: ruff check .
+
+      - name: Run Ruff Formatting Check
+        run: ruff format --check .
+
+      - name: Run Pre-commit against all files
+        run: pre-commit run --all-files
