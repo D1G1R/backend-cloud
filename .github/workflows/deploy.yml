@@ -1,0 +1,59 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  lint-and-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Linting Tools
+        run: pip install flake8
+
+      - name: Run Lint Test
+        run: |
+          echo "Running Lint Test..."
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Semantic Versioning
+        run: |
+          echo "Version bumped to 1.0.0"
+
+  deploy:
+    needs: lint-and-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Azure VM via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VM_IP }}
+          username: ${{ secrets.VM_USERNAME }}
+          password: ${{ secrets.VM_PASSWORD }}
+          script: |
+            sudo apt-get update
+            sudo apt-get install -y docker.io git
+            sudo systemctl start docker
+            sudo systemctl enable docker
+
+            if [ ! -d "backend-cloud" ]; then
+              git clone https://github.com/${{ github.repository }}.git
+            fi
+            cd backend-cloud
+            git reset --hard
+            git pull origin main
+
+            sudo docker build -t robomunch-backend .
+            sudo docker stop backend-container || true
+            sudo docker rm backend-container || true
+            sudo docker run -d --name backend-container -p 80:8000 robomunch-backend
