@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/D1G1R/backend-cloud/compare/v1.0.0...v1.0.1) (2026-06-06)
+
+
+### Bug Fixes
+
+* fix ([72e8c0c](https://github.com/D1G1R/backend-cloud/commit/72e8c0c836763af270c71c42d685b6e051f19038))
+
 # 1.0.0 (2026-06-06)
 
 
